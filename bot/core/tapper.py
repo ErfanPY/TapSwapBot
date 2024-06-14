@@ -1,4 +1,3 @@
-import re
 import asyncio
 from time import time
 from random import randint
@@ -100,10 +99,10 @@ class Tapper:
             response_json = await response.json()
             chq = response_json.get('chq')
             if chq:
-                chq_result = await self.extract_chq(http_client=http_client, chq=chq)
+                chq_result = extract_chq(chq=chq)
 
                 response = await http_client.post(url='https://api.tapswap.ai/api/account/login',
-                                                  json={"chr": chq_result, "init_data": tg_web_data, "referrer": "", "bot_key":"app_bot_0"})
+                                                  json={"chr": chq_result, "init_data": tg_web_data, "referrer": ""})
                 response_text = await response.text()
                 response.raise_for_status()
 
@@ -117,24 +116,6 @@ class Tapper:
             logger.error(f"{self.session_name} | Unknown error while getting Access Token: {error} | "
                          f"Response text: {escape_html(response_text)[:128]}...")
             await asyncio.sleep(delay=3)
-
-    async def extract_chq(self, http_client:aiohttp.ClientSession, chq: str) -> int:
-        retry_count = 0
-        while True:
-            try:
-                chr_response = await http_client.get( f"https://insight.toonsway.com/sweetness.php?chq={chq}")
-                chr_response.raise_for_status()
-                chr_text = await chr_response.text()
-                chr_value = int(re.search(r'\d+', chr_text).group())
-                return chr_value
-            except Exception as error:
-                logger.error(f"{self.session_name} | Failed solving chq: {error} | "
-                            f"Response text: {escape_html(chr_text)[:128]}...")
-
-                if retry_count > 5:
-                    return None
-
-                retry_count += 1
 
     async def apply_boost(self, http_client: aiohttp.ClientSession, boost_type: str) -> bool:
         response_text = ''
